@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GDELTResponse, EventData, TimeFilter, EventCategory } from '@/types';
+import { EventData, TimeFilter, EventCategory } from '@/types';
 import { CATEGORY_CONFIG, TIME_FILTER_CONFIG, convertGDELTToEventData } from '@/lib/utils';
 
 const GDELT_BASE_URL = 'https://api.gdeltproject.org/api/v2/geo/geo';
@@ -25,13 +25,14 @@ async function fetchGDELTData(category: EventCategory, timeFilter: TimeFilter): 
       throw new Error(`GDELT API error: ${response.status} ${response.statusText}`);
     }
 
-    const data: GDELTResponse = await response.json();
+    const data = await response.json();
     
-    if (!data.features) {
+    if (!data.features || !Array.isArray(data.features)) {
       console.warn(`No features in GDELT response for ${category}`);
       return [];
     }
 
+    console.log(`Got ${data.features.length} features for ${category}`);
     return convertGDELTToEventData(data.features, category);
   } catch (error) {
     console.error(`Error fetching ${category} events:`, error);

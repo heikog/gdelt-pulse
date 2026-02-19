@@ -61,9 +61,9 @@ export const useAppStore = create<AppState & AppActions>((set, get) => ({
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(event => 
-        event.properties.title?.toLowerCase().includes(query) ||
-        event.properties.domain?.toLowerCase().includes(query) ||
-        event.category.toLowerCase().includes(query)
+        event.name?.toLowerCase().includes(query) ||
+        event.category.toLowerCase().includes(query) ||
+        event.html?.toLowerCase().includes(query)
       );
     }
 

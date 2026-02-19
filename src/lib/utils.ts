@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { EventCategory, TimeFilter, EventData, GDELTEvent } from '@/types';
+import { EventCategory, TimeFilter, EventData, GDELTFeature } from '@/types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -42,12 +42,20 @@ export const TIME_FILTER_CONFIG = {
   '7D': { hours: 168, label: '7 Days' }
 } as const;
 
-export function convertGDELTToEventData(data: GDELTEvent[], category: EventCategory): EventData[] {
-  return data.map(event => ({
-    ...event,
-    category,
-    color: CATEGORY_CONFIG[category].color
-  }));
+export function convertGDELTToEventData(features: GDELTFeature[], category: EventCategory): EventData[] {
+  return features
+    .filter(f => f.geometry?.coordinates?.length === 2)
+    .map((feature, index) => ({
+      id: `${category}-${index}-${feature.properties.name}`,
+      lat: feature.geometry.coordinates[1],
+      lng: feature.geometry.coordinates[0],
+      name: feature.properties.name,
+      count: feature.properties.count || 1,
+      category,
+      color: CATEGORY_CONFIG[category].color,
+      shareimage: feature.properties.shareimage,
+      html: feature.properties.html,
+    }));
 }
 
 export function formatTimeAgo(dateString: string): string {

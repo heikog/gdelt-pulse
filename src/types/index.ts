@@ -1,37 +1,36 @@
-export interface GDELTEvent {
-  type: string;
+export interface GDELTFeature {
+  type: 'Feature';
   geometry: {
     type: 'Point';
     coordinates: [number, number]; // [longitude, latitude]
   };
   properties: {
-    url: string;
-    urltone?: number;
-    domain?: string;
-    urlpubtimedate?: string;
-    urlpubdate?: string;
-    language?: string;
-    title?: string;
-    seendate?: string;
-    socialimage?: string;
-    identifier?: string;
-    sentiment?: number;
-    category?: string;
+    name: string;
+    count: number;
+    shareimage?: string;
+    html?: string;
   };
 }
 
 export interface GDELTResponse {
   type: 'FeatureCollection';
-  features: GDELTEvent[];
+  features: GDELTFeature[];
 }
 
 export type EventCategory = 'conflict' | 'protest' | 'diplomacy' | 'disaster';
 
 export type TimeFilter = '1H' | '6H' | '12H' | '24H' | '3D' | '7D';
 
-export interface EventData extends GDELTEvent {
+export interface EventData {
+  id: string;
+  lat: number;
+  lng: number;
+  name: string;
+  count: number;
   category: EventCategory;
   color: string;
+  shareimage?: string;
+  html?: string;
 }
 
 export interface AppState {
@@ -51,5 +50,5 @@ export interface GlobePoint {
   title: string;
   url: string;
   category: EventCategory;
-  date: string;
+  size: number;
 }

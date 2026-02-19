@@ -3,10 +3,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useAppStore } from '@/lib/store';
-import { GlobePoint } from '@/types';
-import { formatTimeAgo } from '@/lib/utils';
+import { EventData } from '@/types';
 
-// Dynamically import Globe to avoid SSR issues
 const GlobeComponent = dynamic(() => import('react-globe.gl'), {
   ssr: false,
   loading: () => (
@@ -18,61 +16,53 @@ const GlobeComponent = dynamic(() => import('react-globe.gl'), {
 
 export function Globe() {
   const globeRef = useRef<any>(null);
-  const [selectedPoint, setSelectedPoint] = useState<GlobePoint | null>(null);
+  const [selectedPoint, setSelectedPoint] = useState<EventData | null>(null);
   const { filteredEvents, loading } = useAppStore();
 
-  // Convert events to globe points
-  const globePoints: GlobePoint[] = filteredEvents.map(event => ({
-    lat: event.geometry.coordinates[1],
-    lng: event.geometry.coordinates[0],
+  // Convert events to globe points format
+  const globePoints = filteredEvents.map(event => ({
+    lat: event.lat,
+    lng: event.lng,
     color: event.color,
-    title: event.properties.title || 'Untitled Event',
-    url: event.properties.url,
+    size: Math.min(Math.max(Math.log(event.count + 1) * 0.3, 0.3), 2),
+    name: event.name,
     category: event.category,
-    date: event.properties.urlpubdate || event.properties.seendate || '',
+    count: event.count,
+    html: event.html,
+    id: event.id,
   }));
 
-  // Auto-rotate the globe
   useEffect(() => {
     if (!globeRef.current) return;
-    
     const globe = globeRef.current as any;
     globe.controls().autoRotate = true;
     globe.controls().autoRotateSpeed = 0.5;
-    
-    // Set initial camera position
-    globe.pointOfView({
-      lat: 20,
-      lng: 0,
-      altitude: 2,
-    });
+    globe.pointOfView({ lat: 20, lng: 0, altitude: 2 });
   }, []);
 
-  const handlePointClick = (point: object, event: MouseEvent, coords: { lat: number; lng: number; altitude: number; }) => {
-    setSelectedPoint(point as GlobePoint);
+  const handlePointClick = (point: any) => {
+    const event = filteredEvents.find(e => e.id === point.id);
+    if (event) setSelectedPoint(event);
     
-    // Stop auto-rotation temporarily
     if (globeRef.current) {
       const globe = globeRef.current as any;
       globe.controls().autoRotate = false;
-      
-      // Resume auto-rotation after 10 seconds
       setTimeout(() => {
-        if (globe.controls) {
-          globe.controls().autoRotate = true;
-        }
+        if (globe.controls) globe.controls().autoRotate = true;
       }, 10000);
     }
-  };
-
-  const handleGlobeClick = () => {
-    setSelectedPoint(null);
   };
 
   if (loading && globePoints.length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-black">
-        <div className="text-cyan-400 text-lg">Loading Globe...</div>
+        <div className="relative">
+          <div className="h-16 w-16 rounded-full border-2 border-white/10 border-t-cyan-400 animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-3 w-3 rounded-full bg-cyan-400/80 animate-pulse"></div>
+          </div>
+        </div>
+        <p className="mt-6 text-sm text-white/40 tracking-wider ml-4">Loading events...</p>
       </div>
     );
   }
@@ -85,33 +75,26 @@ export function Globe() {
         bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
         backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
         
-        // Points configuration
         pointsData={globePoints}
         pointAltitude={0.02}
-        pointRadius={0.6}
+        pointRadius="size"
         pointColor="color"
         pointLabel={(point: any) => `
-          <div class="bg-gray-900 p-3 rounded-lg border border-cyan-500/20 max-w-sm">
-            <div class="font-semibold text-cyan-400 text-sm mb-1">${point.category.toUpperCase()}</div>
-            <div class="text-white text-sm mb-2">${point.title}</div>
-            ${point.date ? `<div class="text-gray-400 text-xs">${formatTimeAgo(point.date)}</div>` : ''}
+          <div style="background:rgba(17,24,39,0.95);padding:12px;border-radius:8px;border:1px solid rgba(6,182,212,0.2);max-width:320px">
+            <div style="color:#22d3ee;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">${point.category}</div>
+            <div style="color:white;font-size:13px;font-weight:600;margin-bottom:4px">${point.name}</div>
+            <div style="color:#9ca3af;font-size:11px">${point.count} event${point.count !== 1 ? 's' : ''}</div>
           </div>
         `}
         onPointClick={handlePointClick}
-        onGlobeClick={handleGlobeClick}
+        onGlobeClick={() => setSelectedPoint(null)}
         
-        // Globe appearance
         atmosphereColor="rgba(6, 182, 212, 0.15)"
         atmosphereAltitude={0.15}
-        
-        // Animation
         animateIn={true}
-        
-        // Controls
         enablePointerInteraction={true}
       />
       
-      {/* Event Details Sidebar */}
       {selectedPoint && (
         <div className="absolute top-4 right-4 w-80 bg-gray-900/95 backdrop-blur-sm border border-cyan-500/20 rounded-lg p-4 shadow-lg">
           <div className="flex items-center justify-between mb-3">
@@ -120,67 +103,30 @@ export function Globe() {
             </div>
             <button
               onClick={() => setSelectedPoint(null)}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-white transition-colors text-lg"
             >
               ×
             </button>
           </div>
           
-          <h3 className="text-white font-semibold text-sm mb-3 leading-tight">
-            {selectedPoint.title}
+          <h3 className="text-white font-semibold text-sm mb-2 leading-tight">
+            {selectedPoint.name}
           </h3>
           
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-400">Location:</span>
-              <span className="text-gray-300">
-                {selectedPoint.lat.toFixed(2)}°, {selectedPoint.lng.toFixed(2)}°
-              </span>
-            </div>
-            
-            {selectedPoint.date && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400">Time:</span>
-                <span className="text-gray-300">{formatTimeAgo(selectedPoint.date)}</span>
-              </div>
-            )}
+          <div className="text-gray-400 text-xs mb-3">
+            {selectedPoint.count} event{selectedPoint.count !== 1 ? 's' : ''} reported
           </div>
           
-          <div className="mt-4 pt-3 border-t border-gray-800">
-            <a
-              href={selectedPoint.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full bg-cyan-600 hover:bg-cyan-700 text-white text-center py-2 px-4 rounded-lg text-sm font-medium transition-colors"
-            >
-              Read More →
-            </a>
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <span>{selectedPoint.lat.toFixed(2)}°, {selectedPoint.lng.toFixed(2)}°</span>
           </div>
+          
+          {selectedPoint.html && (
+            <div className="mt-3 pt-3 border-t border-gray-800 text-xs text-gray-300 max-h-40 overflow-y-auto"
+                 dangerouslySetInnerHTML={{ __html: selectedPoint.html }} />
+          )}
         </div>
       )}
-      
-      {/* Legend */}
-      <div className="absolute bottom-4 left-4 bg-gray-900/90 backdrop-blur-sm border border-cyan-500/20 rounded-lg p-3">
-        <div className="text-xs text-gray-400 mb-2 font-medium">Event Types</div>
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-            <span className="text-gray-300 text-xs">Conflict</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-            <span className="text-gray-300 text-xs">Protest</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-            <span className="text-gray-300 text-xs">Diplomacy</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-            <span className="text-gray-300 text-xs">Disaster</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
