@@ -47,8 +47,7 @@ export function Globe() {
   useEffect(() => {
     if (!globeRef.current) return;
     const globe = globeRef.current as any;
-    globe.controls().autoRotate = true;
-    globe.controls().autoRotateSpeed = 0.5;
+    globe.controls().autoRotate = false;
     globe.pointOfView({ lat: 20, lng: 0, altitude: 2 });
   }, []);
 
@@ -56,13 +55,6 @@ export function Globe() {
     const event = filteredEvents.find(e => e.id === point.id);
     if (event) setSelectedPoint(event);
     
-    if (globeRef.current) {
-      const globe = globeRef.current as any;
-      globe.controls().autoRotate = false;
-      setTimeout(() => {
-        if (globe.controls) globe.controls().autoRotate = true;
-      }, 10000);
-    }
   };
 
   if (loading && globePoints.length === 0) {
