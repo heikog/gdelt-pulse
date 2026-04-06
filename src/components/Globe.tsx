@@ -16,8 +16,20 @@ const GlobeComponent = dynamic(() => import('react-globe.gl'), {
 
 export function Globe() {
   const globeRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [selectedPoint, setSelectedPoint] = useState<EventData | null>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const { filteredEvents, loading } = useAppStore();
+
+  // Track container size for globe sizing
+  useEffect(() => {
+    const update = () => {
+      setDimensions({ width: window.innerWidth, height: window.innerHeight });
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   // Convert events to globe points format
   const globePoints = filteredEvents.map(event => ({
@@ -68,9 +80,11 @@ export function Globe() {
   }
 
   return (
-    <div className="relative w-full h-full">
+    <div ref={containerRef} className="absolute inset-0">
       <GlobeComponent
         ref={globeRef}
+        width={dimensions.width || undefined}
+        height={dimensions.height || undefined}
         globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
         bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
         backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"

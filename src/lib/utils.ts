@@ -8,25 +8,25 @@ export function cn(...inputs: ClassValue[]) {
 
 export const CATEGORY_CONFIG = {
   conflict: {
-    query: 'conflict OR war OR attack OR violence OR military',
+    query: '(conflict OR war OR attack OR violence OR military)',
     color: '#ef4444', // red-500
     name: 'Conflict',
     icon: '⚔️'
   },
   protest: {
-    query: 'protest OR demonstration OR riot OR march',
+    query: '(protest OR demonstration OR riot OR march)',
     color: '#eab308', // yellow-500
     name: 'Protest',
     icon: '✊'
   },
   diplomacy: {
-    query: 'diplomacy OR treaty OR summit OR negotiation OR agreement',
+    query: '(diplomacy OR treaty OR summit OR negotiation OR agreement)',
     color: '#3b82f6', // blue-500
     name: 'Diplomacy',
     icon: '🤝'
   },
   disaster: {
-    query: 'earthquake OR flood OR hurricane OR disaster OR emergency',
+    query: '(earthquake OR flood OR hurricane OR disaster OR emergency)',
     color: '#22c55e', // green-500
     name: 'Disaster',
     icon: '🌪️'
@@ -41,6 +41,22 @@ export const TIME_FILTER_CONFIG = {
   '3D': { hours: 72, label: '3 Days' },
   '7D': { hours: 168, label: '7 Days' }
 } as const;
+
+export function convertGDELTPointData(points: Array<{name: string; count: number; lat: number; lng: number; shareimage?: string; html?: string}>, category: EventCategory): EventData[] {
+  return points
+    .filter(p => typeof p.lat === 'number' && typeof p.lng === 'number')
+    .map((point, index) => ({
+      id: `${category}-${index}-${point.name}`,
+      lat: point.lat,
+      lng: point.lng,
+      name: point.name,
+      count: point.count || 1,
+      category,
+      color: CATEGORY_CONFIG[category].color,
+      shareimage: point.shareimage,
+      html: point.html,
+    }));
+}
 
 export function convertGDELTToEventData(features: GDELTFeature[], category: EventCategory): EventData[] {
   return features
